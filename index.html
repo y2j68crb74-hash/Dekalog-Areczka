@@ -1,536 +1,391 @@
 <!DOCTYPE html>
+
 <html lang="pl">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dekalog Areczka - Quiz o Czasie Pracy Kierowcy</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        pepsiBlue: '#00205b',
-                        pepsiRed: '#c9002b',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        
-        /* Smooth transitions for screens */
-        .screen {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .screen.active {
-            display: block;
-            opacity: 1;
-        }
 
-        /* Option button hover and state styles */
-        .option-btn {
-            transition: all 0.2s ease;
-        }
-        .option-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-color: #00205b;
-            background-color: #f8fafc;
-        }
-        .option-btn:active:not(:disabled) {
-            transform: translateY(0);
-        }
-        .option-btn.correct {
-            background-color: #10b981 !important; /* Emerald 500 */
-            color: white !important;
-            border-color: #10b981 !important;
-        }
-        .option-btn.incorrect {
-            background-color: #ef4444 !important; /* Red 500 */
-            color: white !important;
-            border-color: #ef4444 !important;
-        }
-        .option-btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.9;
-        }
+<meta charset="UTF-8">
 
-        /* Floating background animations */
-        @keyframes flyAcross {
-            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
-        }
-        .floating-bg {
-            position: fixed;
-            animation: flyAcross 15s linear infinite;
-            z-index: 50; /* Przeniesione na pierwszy plan */
-            font-size: 3rem;
-            opacity: 0;
-            pointer-events: none; /* Nie blokuje klikania w przyciski! */
-        }
-        .float-1 { left: 5%; animation-duration: 12s; animation-delay: 0s; }
-        .float-2 { left: 25%; animation-duration: 16s; animation-delay: 4s; }
-        .float-3 { left: 45%; animation-duration: 14s; animation-delay: 2s; }
-        .float-4 { left: 65%; animation-duration: 18s; animation-delay: 6s; font-size: 4rem; }
-        .float-5 { left: 85%; animation-duration: 13s; animation-delay: 1s; }
-        .float-6 { left: 15%; animation-duration: 17s; animation-delay: 7s; font-size: 2.5rem; }
-        .float-7 { left: 75%; animation-duration: 15s; animation-delay: 5s; font-size: 2rem; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        /* Start Screen Animations */
-        @keyframes pulse-shadow {
-            0% { box-shadow: 0 0 0 0 rgba(201, 0, 43, 0.4); }
-            70% { box-shadow: 0 0 0 20px rgba(201, 0, 43, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(201, 0, 43, 0); }
-        }
-        .btn-pulse {
-            animation: pulse-shadow 2s infinite;
-        }
-        .text-gradient {
-            background: linear-gradient(135deg, #00205b 0%, #c9002b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-    </style>
+<title>Dekalog Areczka - Quiz</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+
+body { background: linear-gradient(135deg, #0a1f44 0%, #1a365d 100%); overflow: hidden; }
+
+.floating { animation: float 6s ease-in-out infinite; pointer-events: none; }
+
+@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+</style>
+
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- Pływające elementy w tle -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-50">
-        <div class="floating-bg float-1">🇵🇱</div>
-        <div class="floating-bg float-2">🇲🇽</div>
-        <div class="floating-bg float-3">📅</div>
-        <div class="floating-bg float-4">📋</div>
-        <div class="floating-bg float-5">🇵🇱</div>
-        <div class="floating-bg float-6">🇲🇽</div>
-        <div class="floating-bg float-7">⏱️</div>
-    </div>
+<body class="text-white min-h-screen flex items-center justify-center font-sans">
 
-    <!-- Main Application Container -->
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-        
-        <!-- Header -->
-        <div class="bg-pepsiBlue h-3 w-full flex">
-            <div class="bg-pepsiRed h-full w-1/2"></div>
-            <div class="bg-pepsiBlue h-full w-1/2"></div>
-        </div>
 
-        <div class="p-6 md:p-10 min-h-[400px] flex flex-col justify-center relative">
-            
-            <!-- START SCREEN -->
-            <div id="start-screen" class="screen active text-center">
-                <div class="mb-8 flex justify-center">
-                    <div class="w-24 h-24 bg-pepsiBlue rounded-full flex items-center justify-center shadow-xl relative overflow-hidden transform hover:scale-110 transition-transform duration-500">
-                        <!-- Simple abstract logo -->
-                        <div class="absolute w-full h-1/2 bg-pepsiRed top-0 left-0"></div>
-                        <div class="absolute w-full h-2 bg-white top-1/2 left-0 transform -translate-y-1/2 -rotate-12 z-10"></div>
-                        <svg class="w-12 h-12 text-white relative z-20 animate-bounce mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <h1 class="text-4xl md:text-5xl font-extrabold text-gradient mb-4 tracking-tight uppercase">Dekalog Areczka</h1>
-                <h2 class="text-2xl text-gray-700 mb-8 font-bold border-b-2 border-gray-200 inline-block pb-2">Quiz o Czasie Pracy Kierowcy</h2>
-                <p class="text-gray-500 mb-10 max-w-md mx-auto leading-relaxed text-lg">
-                    Sprawdź swoją wiedzę z przepisów dotyczących czasu prowadzenia pojazdów. Czy jesteś gotowy udowodnić swoje umiejętności planistyczne?
-                </p>
-                <button onclick="startQuiz()" class="btn-pulse bg-gradient-to-r from-pepsiRed to-red-600 hover:from-red-600 hover:to-pepsiRed text-white font-black text-xl py-5 px-12 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105 border-4 border-white">
-                    ROZPOCZNIJ QUIZ
-                </button>
-            </div>
 
-            <!-- QUIZ SCREEN -->
-            <div id="quiz-screen" class="screen w-full">
-                <!-- Progress bar -->
-                <div class="mb-6">
-                    <div class="flex justify-between text-sm font-semibold text-gray-500 mb-2">
-                        <span id="question-counter">Pytanie 1 z 6</span>
-                        <span id="score-counter">Punkty: 0</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="progress-bar" class="bg-pepsiRed h-2.5 rounded-full transition-all duration-300" style="width: 16.66%"></div>
-                    </div>
-                </div>
+<!-- Elementy pływające w tle -->
 
-                <div id="question-container" class="mb-8">
-                    <h3 id="question-text" class="text-2xl font-bold text-gray-800 mb-6 leading-snug">
-                        <!-- Question goes here -->
-                    </h3>
-                    <div id="options-container" class="space-y-3">
-                        <!-- Options go here -->
-                    </div>
-                </div>
-            </div>
+<div class="fixed top-10 left-10 text-4xl floating" style="animation-delay: 0s;">🇵🇱</div>
 
-            <!-- RESULT SCREEN -->
-            <div id="result-screen" class="screen text-center">
-                <div class="mb-6 flex justify-center">
-                    <div id="result-icon" class="w-24 h-24 rounded-full flex items-center justify-center shadow-lg">
-                        <!-- Icon injected by JS -->
-                    </div>
-                </div>
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">Podsumowanie</h2>
-                <div class="text-5xl font-extrabold text-pepsiBlue mb-6" id="final-score">
-                    6/6
-                </div>
-                <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100 shadow-inner">
-                    <p id="result-message" class="text-xl md:text-2xl font-semibold text-gray-800 italic">
-                        <!-- Message goes here -->
-                    </p>
-                </div>
-                <button onclick="resetQuiz()" class="bg-pepsiRed hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105">
-                    Spróbuj ponownie
-                </button>
-            </div>
+<div class="fixed bottom-20 right-10 text-4xl floating" style="animation-delay: 1s;">🇲🇽</div>
 
-        </div>
-        
-        <!-- Footer -->
-        <div class="bg-gray-50 text-center py-3 text-xs text-gray-400 border-t border-gray-100">
-            Materiały Szkoleniowe © 2026
-        </div>
-    </div>
+<div class="fixed top-40 right-20 text-4xl floating" style="animation-delay: 2s;">🚚</div>
 
-    <script>
-        const questions = [
-            {
-                question: "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
-                options: [
-                    { text: "8 godzin", correct: false },
-                    { text: "9 godzin (z możliwością wydłużenia do 10h dwa razy w tygodniu)", correct: true },
-                    { text: "11 godzin", correct: false }
-                ]
-            },
-            {
-                question: "Ile musi wynosić minimalna przerwa po 4,5 godziny ciągłej jazdy?",
-                options: [
-                    { text: "30 minut", correct: false },
-                    { text: "45 minut", correct: true },
-                    { text: "60 minut", correct: false }
-                ]
-            },
-            {
-                question: "Jeśli dzielisz 45-minutową przerwę na dwie części, w jakiej kolejności musisz je odebrać?",
-                options: [
-                    { text: "30 minut, a potem 15 minut", correct: false },
-                    { text: "Dowolna kolejność", correct: false },
-                    { text: "15 minut, a potem 30 minut", correct: true }
-                ]
-            },
-            {
-                question: "Ile wynosi minimalny regularny odpoczynek dobowy?",
-                options: [
-                    { text: "9 godzin", correct: false },
-                    { text: "11 godzin (lub dzielony na 3h + 9h)", correct: true },
-                    { text: "12 godzin", correct: false }
-                ]
-            },
-            {
-                question: "Jaki jest maksymalny tygodniowy czas jazdy?",
-                options: [
-                    { text: "56 godzin", correct: true },
-                    { text: "90 godzin", correct: false },
-                    { text: "45 godzin", correct: false }
-                ]
-            },
-            {
-                question: "Ile minimum wynosi skrócony odpoczynek tygodniowy?",
-                options: [
-                    { text: "24 godziny", correct: true },
-                    { text: "45 godzin", correct: false },
-                    { text: "21 godzin", correct: false }
-                ]
-            }
-        ];
+<div class="fixed bottom-32 left-20 text-4xl floating" style="animation-delay: 3s;">📅</div>
 
-        // Funkcja do tasowania tablicy (Fisher-Yates)
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
+<!-- Główny kontener aplikacji -->
 
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let isAnswering = false;
+<div id="app" class="relative z-10 w-full max-w-md p-6 bg-white rounded-xl shadow-2xl text-gray-800 text-center mx-4">
 
-        const startScreen = document.getElementById('start-screen');
-        const quizScreen = document.getElementById('quiz-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const questionText = document.getElementById('question-text');
-        const optionsContainer = document.getElementById('options-container');
-        const questionCounter = document.getElementById('question-counter');
-        const scoreCounter = document.getElementById('score-counter');
-        const progressBar = document.getElementById('progress-bar');
-        const finalScore = document.getElementById('final-score');
-        const resultMessage = document.getElementById('result-message');
-        const resultIcon = document.getElementById('result-icon');
 
-        // WEB AUDIO API SYNTHESIZER
-        let audioCtx = null;
-        let tickingInterval = null;
 
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
+<!-- Ekran Startowy -->
 
-        function playTone(freq, type, duration, vol, startTimeOffset = 0) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            const startTime = audioCtx.currentTime + startTimeOffset;
-            
-            osc.frequency.setValueAtTime(freq, startTime);
-            gain.gain.setValueAtTime(vol, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(startTime);
-            osc.stop(startTime + duration);
-        }
+<div id="start-screen">
 
-        function playStartMelody() {
-            initAudio();
-            // Wesoła melodyjka startowa: C4, E4, G4, C5
-            playTone(261.63, 'sine', 0.15, 0.1, 0);    
-            playTone(329.63, 'sine', 0.15, 0.1, 0.15); 
-            playTone(392.00, 'sine', 0.15, 0.1, 0.3);  
-            playTone(523.25, 'sine', 0.4, 0.1, 0.45);  
-        }
+<h1 class="text-3xl font-bold text-blue-900 mb-2">Dekalog Areczka</h1>
 
-        function playTick() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.05);
-        }
+<p class="mb-6 text-gray-600">Quiz z czasu pracy kierowcy. Kliknij przycisk, aby odblokować dźwięk i zacząć!</p>
 
-        function startTicking() {
-            if (tickingInterval) clearInterval(tickingInterval);
-            tickingInterval = setInterval(playTick, 1000);
-        }
+<button id="start-btn" class="bg-red-600 text-white px-6 py-4 rounded-lg font-bold w-full hover:bg-red-700 transition text-lg shadow-lg">ROZPOCZNIJ QUIZ</button>
 
-        function stopTicking() {
-            if (tickingInterval) {
-                clearInterval(tickingInterval);
-                tickingInterval = null;
-            }
-        }
+</div>
 
-        function playCorrectSound() {
-            initAudio();
-            // Przyjemny wznoszący ton (Ding-Ding)
-            playTone(523.25, 'sine', 0.15, 0.1, 0);    // C5
-            playTone(659.25, 'sine', 0.3, 0.1, 0.15);  // E5
-        }
+<!-- Ekran Quizu -->
 
-        function playIncorrectSound() {
-            initAudio();
-            if (!audioCtx) return;
-            // Smutny, opadający dźwięk (Buzzer)
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(250, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-        }
+<div id="quiz-screen" class="hidden">
 
-        function playFanfare() {
-            initAudio();
-            // Zwycięskie fanfary: C5, E5, G5, C6
-            playTone(523.25, 'square', 0.2, 0.1, 0);    // C5
-            playTone(659.25, 'square', 0.2, 0.1, 0.2);  // E5
-            playTone(783.99, 'square', 0.2, 0.1, 0.4);  // G5
-            playTone(1046.50, 'square', 0.6, 0.1, 0.6); // C6
-        }
+<div class="flex justify-between items-center mb-4 text-sm font-bold text-gray-500">
 
-        function switchScreen(screenToHide, screenToShow) {
-            screenToHide.classList.remove('active');
-            setTimeout(() => {
-                screenToShow.classList.add('active');
-            }, 300); // Matches CSS transition time
-        }
+<span id="q-counter">Pytanie 1/6</span>
 
-        function startQuiz() {
-            initAudio(); // Odblokowanie dźwięku przy pierwszym kliknięciu użytkownika
-            playStartMelody();
-            startTicking();
-            shuffleArray(questions); // Tasowanie pytań za każdym rozpoczęciem
-            currentQuestionIndex = 0;
-            score = 0;
-            isAnswering = false;
-            scoreCounter.innerText = `Punkty: ${score}`;
-            loadQuestion();
-            switchScreen(startScreen, quizScreen);
-        }
+<span id="clock" class="text-red-500 animate-pulse text-lg">⏱️</span>
 
-        function loadQuestion() {
-            isAnswering = false;
-            const currentQuestion = questions[currentQuestionIndex];
-            
-            // Update UI Counters
-            questionCounter.innerText = `Pytanie ${currentQuestionIndex + 1} z ${questions.length}`;
-            progressBar.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
-            
-            // Render Question
-            questionText.innerText = currentQuestion.question;
-            
-            // Render Options
-            optionsContainer.innerHTML = '';
-            
-            // Create letters for options (A, B, C)
-            const letters = ['A', 'B', 'C'];
+</div>
 
-            currentQuestion.options.forEach((option, index) => {
-                const button = document.createElement('button');
-                button.className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-gray-200 font-medium text-gray-700 flex items-center bg-white';
-                
-                button.innerHTML = `
-                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500 mr-4 border border-gray-200">
-                        ${letters[index]}
-                    </span>
-                    <span>${option.text}</span>
-                `;
-                
-                button.onclick = () => selectAnswer(button, option.correct, index);
-                optionsContainer.appendChild(button);
-            });
-        }
+<h2 id="question-text" class="text-xl font-bold text-blue-900 mb-6">Pytanie?</h2>
 
-        function selectAnswer(selectedButton, isCorrect, selectedIndex) {
-            if (isAnswering) return;
-            isAnswering = true;
+<div id="answers-container" class="space-y-3"></div>
 
-            const buttons = optionsContainer.querySelectorAll('.option-btn');
-            
-            // Disable all buttons
-            buttons.forEach(btn => btn.disabled = true);
+</div>
 
-            if (isCorrect) {
-                playCorrectSound();
-                selectedButton.classList.add('correct');
-                // Change letter styling
-                selectedButton.querySelector('span').classList.replace('bg-gray-100', 'bg-white');
-                selectedButton.querySelector('span').classList.replace('text-gray-500', 'text-emerald-500');
-                
-                score++;
-                scoreCounter.innerText = `Punkty: ${score}`;
-            } else {
-                playIncorrectSound();
-                selectedButton.classList.add('incorrect');
-                selectedButton.querySelector('span').classList.replace('bg-gray-100', 'bg-white');
-                selectedButton.querySelector('span').classList.replace('text-gray-500', 'text-red-500');
+<!-- Ekran Wyników -->
 
-                // Highlight correct answer
-                const correctIndex = questions[currentQuestionIndex].options.findIndex(opt => opt.correct);
-                const correctBtn = buttons[correctIndex];
-                correctBtn.classList.add('correct');
-                correctBtn.querySelector('span').classList.replace('bg-gray-100', 'bg-white');
-                correctBtn.querySelector('span').classList.replace('text-gray-500', 'text-emerald-500');
-            }
+<div id="result-screen" class="hidden">
 
-            setTimeout(() => {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < questions.length) {
-                    // Fade out options slightly before loading new ones
-                    optionsContainer.style.opacity = '0';
-                    setTimeout(() => {
-                        loadQuestion();
-                        optionsContainer.style.opacity = '1';
-                    }, 200);
-                } else {
-                    showResults();
-                }
-            }, 1500); // 1.5 second delay to see the result
-        }
+<h2 class="text-3xl font-bold text-blue-900 mb-4">Koniec!</h2>
 
-        function showResults() {
-            stopTicking();
-            finalScore.innerText = `${score} / ${questions.length}`;
-            
-            if (score === 6) {
-                playFanfare();
-                // Uruchomienie ogromnego konfetti za idealny wynik
-                const duration = 3 * 1000;
-                const end = Date.now() + duration;
-                
-                (function frame() {
-                    confetti({
-                        particleCount: 5,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 },
-                        colors: ['#00205b', '#c9002b', '#ffffff'] // Barwy korporacyjne
-                    });
-                    confetti({
-                        particleCount: 5,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 },
-                        colors: ['#00205b', '#c9002b', '#ffffff']
-                    });
-                    if (Date.now() < end) {
-                        requestAnimationFrame(frame);
-                    }
-                }());
+<p id="result-score" class="text-2xl mb-2 font-bold text-red-600">Twój wynik: 0/6</p>
 
-                resultMessage.innerText = "Gratulacje ! Jesteś świetnym Planistą , Mex ci nie podskoczy !!";
-                resultIcon.className = "w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-emerald-100 text-emerald-500";
-                resultIcon.innerHTML = `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>`;
-            } else if (score >= 3 && score <= 5) {
-                resultMessage.innerText = "No no Areczku, nie jest źle , ale postaraj się bardziej .";
-                resultIcon.className = "w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-blue-100 text-pepsiBlue";
-                resultIcon.innerHTML = `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>`;
-            } else {
-                resultMessage.innerText = "Arek , no co Ty … Jaka lipa . Poducz się i spróbuj jeszcze raz !";
-                resultIcon.className = "w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-red-100 text-pepsiRed";
-                resultIcon.innerHTML = `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
-            }
+<p id="result-text" class="mb-6 text-lg font-medium text-gray-700"></p>
 
-            switchScreen(quizScreen, resultScreen);
-        }
+<button id="restart-btn" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold w-full hover:bg-blue-800 transition">SPRÓBUJ PONOWNIE</button>
 
-        function resetQuiz() {
-            stopTicking();
-            switchScreen(resultScreen, startScreen);
-        }
-    </script>
+</div>
+
+</div>
+
+<script>
+
+// System Audio
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+let actx;
+
+let clockInterval;
+
+function initAudio() {
+
+if (!actx) actx = new AudioContext();
+
+if (actx.state === 'suspended') actx.resume();
+
+}
+
+function playTone(freq, type, duration, vol = 0.1) {
+
+if (!actx) return;
+
+const osc = actx.createOscillator();
+
+const gain = actx.createGain();
+
+osc.type = type;
+
+osc.frequency.setValueAtTime(freq, actx.currentTime);
+
+gain.gain.setValueAtTime(vol, actx.currentTime);
+
+gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
+
+osc.connect(gain);
+
+gain.connect(actx.destination);
+
+osc.start();
+
+osc.stop(actx.currentTime + duration);
+
+}
+
+function playStartMelody() {
+
+initAudio();
+
+const notes = [261.63, 329.63, 392.00, 523.25]; // Akord C-dur
+
+notes.forEach((freq, i) => {
+
+setTimeout(() => playTone(freq, 'sine', 0.4, 0.2), i * 150);
+
+});
+
+}
+
+function playCorrect() {
+
+playTone(600, 'sine', 0.1, 0.2);
+
+setTimeout(() => playTone(800, 'sine', 0.2, 0.2), 100);
+
+}
+
+function playWrong() {
+
+playTone(300, 'sawtooth', 0.3, 0.2);
+
+setTimeout(() => playTone(200, 'sawtooth', 0.4, 0.2), 200);
+
+}
+
+function playFanfare() {
+
+const notes = [440, 440, 440, 587, 440, 587];
+
+notes.forEach((freq, i) => {
+
+setTimeout(() => playTone(freq, 'square', 0.3, 0.1), i * 200);
+
+});
+
+}
+
+function startClock() {
+
+clockInterval = setInterval(() => playTone(800, 'square', 0.05, 0.01), 1000);
+
+}
+
+function stopClock() { clearInterval(clockInterval); }
+
+// Baza pytań
+
+const allQuestions = [
+
+{ q: "Maksymalny dzienny czas jazdy to:", a: "9h (dwa razy w tygodniu do 10h)", wrong: ["8h (raz w tygodniu 9h)", "11h bez wyjątku"] },
+
+{ q: "Maksymalny tygodniowy czas jazdy wynosi:", a: "56 godzin", wrong: ["90 godzin", "45 godzin"] },
+
+{ q: "Po ilu godzinach ciągłej jazdy należy zrobić przerwę?", a: "Po 4,5 godziny", wrong: ["Po 4 godzinach", "Po 5 godzinach"] },
+
+{ q: "Jak można podzielić 45-minutową przerwę?", a: "15 minut, a potem 30 minut", wrong: ["30 minut, a potem 15 minut", "Dowolnie, np. 3x 15 minut"] },
+
+{ q: "Ile wynosi minimalny regularny odpoczynek dzienny?", a: "11 godzin", wrong: ["9 godzin", "12 godzin"] },
+
+{ q: "Ile wynosi minimalny skrócony odpoczynek tygodniowy?", a: "24 godziny", wrong: ["45 godzin", "11 godzin"] }
+
+];
+
+let questions = [];
+
+let currentQuestion = 0;
+
+let score = 0;
+
+// UI Elements
+
+const screens = {
+
+start: document.getElementById('start-screen'),
+
+quiz: document.getElementById('quiz-screen'),
+
+result: document.getElementById('result-screen')
+
+};
+
+const elements = {
+
+qText: document.getElementById('question-text'),
+
+answers: document.getElementById('answers-container'),
+
+counter: document.getElementById('q-counter'),
+
+resScore: document.getElementById('result-score'),
+
+resText: document.getElementById('result-text')
+
+};
+
+function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+document.getElementById('start-btn').addEventListener('click', () => {
+
+playStartMelody();
+
+setTimeout(startGame, 600);
+
+});
+
+document.getElementById('restart-btn').addEventListener('click', startGame);
+
+function startGame() {
+
+questions = shuffle([...allQuestions]);
+
+currentQuestion = 0;
+
+score = 0;
+
+screens.start.classList.add('hidden');
+
+screens.result.classList.add('hidden');
+
+screens.quiz.classList.remove('hidden');
+
+startClock();
+
+loadQuestion();
+
+}
+
+function loadQuestion() {
+
+elements.counter.innerText = `Pytanie ${currentQuestion + 1}/${questions.length}`;
+
+const q = questions[currentQuestion];
+
+elements.qText.innerText = q.q;
+
+
+
+const options = shuffle([q.a, ...q.wrong]);
+
+elements.answers.innerHTML = '';
+
+
+
+options.forEach(opt => {
+
+const btn = document.createElement('button');
+
+btn.className = "w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-900 transition font-medium";
+
+btn.innerText = opt;
+
+btn.onclick = () => handleAnswer(btn, opt === q.a);
+
+elements.answers.appendChild(btn);
+
+});
+
+}
+
+function handleAnswer(btn, isCorrect) {
+
+Array.from(elements.answers.children).forEach(b => b.disabled = true);
+
+
+
+if (isCorrect) {
+
+btn.classList.replace('border-gray-200', 'border-green-500');
+
+btn.classList.add('bg-green-100');
+
+playCorrect();
+
+score++;
+
+} else {
+
+btn.classList.replace('border-gray-200', 'border-red-500');
+
+btn.classList.add('bg-red-100');
+
+playWrong();
+
+// Pokazanie dobrej odpowiedzi
+
+Array.from(elements.answers.children).forEach(b => {
+
+if(b.innerText === questions[currentQuestion].a) {
+
+b.classList.replace('border-gray-200', 'border-green-500');
+
+}
+
+});
+
+}
+
+setTimeout(() => {
+
+currentQuestion++;
+
+if (currentQuestion < questions.length) loadQuestion();
+
+else showResult();
+
+}, 1500);
+
+}
+
+function showResult() {
+
+stopClock();
+
+screens.quiz.classList.add('hidden');
+
+screens.result.classList.remove('hidden');
+
+elements.resScore.innerText = `Twój wynik: ${score}/6`;
+
+if (score === 6) {
+
+elements.resText.innerText = "Gratulacje ! Jesteś świetnym Planistą , Mex ci nie podskoczy !!";
+
+playFanfare();
+
+confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+} else if (score >= 3) {
+
+elements.resText.innerText = "No no Areczku, nie jest źle , ale postaraj się bardziej .";
+
+playTone(300, 'sine', 0.5);
+
+} else {
+
+elements.resText.innerText = "Arek , no co Ty … Jaka lipa . Poducz się i spróbuj jeszcze raz !";
+
+playWrong();
+
+}
+
+}
+
+</script>
+
 </body>
-</html>  
+
+</html>
