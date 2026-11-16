@@ -1,391 +1,257 @@
 <!DOCTYPE html>
-
 <html lang="pl">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Dekalog Areczka - Quiz</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-<style>
-
-body { background: linear-gradient(135deg, #0a1f44 0%, #1a365d 100%); overflow: hidden; }
-
-.floating { animation: float 6s ease-in-out infinite; pointer-events: none; }
-
-@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dekalog Areczka - Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0a1f44 0%, #1a365d 100%); overflow: hidden; }
+        .floating { animation: float 6s ease-in-out infinite; pointer-events: none; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+    </style>
 </head>
-
 <body class="text-white min-h-screen flex items-center justify-center font-sans">
-
-
-
-<!-- Elementy pływające w tle -->
-
-<div class="fixed top-10 left-10 text-4xl floating" style="animation-delay: 0s;">🇵🇱</div>
-
-<div class="fixed bottom-20 right-10 text-4xl floating" style="animation-delay: 1s;">🇲🇽</div>
-
-<div class="fixed top-40 right-20 text-4xl floating" style="animation-delay: 2s;">🚚</div>
-
-<div class="fixed bottom-32 left-20 text-4xl floating" style="animation-delay: 3s;">📅</div>
-
-<!-- Główny kontener aplikacji -->
-
-<div id="app" class="relative z-10 w-full max-w-md p-6 bg-white rounded-xl shadow-2xl text-gray-800 text-center mx-4">
-
-
-
-<!-- Ekran Startowy -->
-
-<div id="start-screen">
-
-<h1 class="text-3xl font-bold text-blue-900 mb-2">Dekalog Areczka</h1>
-
-<p class="mb-6 text-gray-600">Quiz z czasu pracy kierowcy. Kliknij przycisk, aby odblokować dźwięk i zacząć!</p>
-
-<button id="start-btn" class="bg-red-600 text-white px-6 py-4 rounded-lg font-bold w-full hover:bg-red-700 transition text-lg shadow-lg">ROZPOCZNIJ QUIZ</button>
-
-</div>
-
-<!-- Ekran Quizu -->
-
-<div id="quiz-screen" class="hidden">
-
-<div class="flex justify-between items-center mb-4 text-sm font-bold text-gray-500">
-
-<span id="q-counter">Pytanie 1/6</span>
-
-<span id="clock" class="text-red-500 animate-pulse text-lg">⏱️</span>
-
-</div>
-
-<h2 id="question-text" class="text-xl font-bold text-blue-900 mb-6">Pytanie?</h2>
-
-<div id="answers-container" class="space-y-3"></div>
-
-</div>
-
-<!-- Ekran Wyników -->
-
-<div id="result-screen" class="hidden">
-
-<h2 class="text-3xl font-bold text-blue-900 mb-4">Koniec!</h2>
-
-<p id="result-score" class="text-2xl mb-2 font-bold text-red-600">Twój wynik: 0/6</p>
-
-<p id="result-text" class="mb-6 text-lg font-medium text-gray-700"></p>
-
-<button id="restart-btn" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold w-full hover:bg-blue-800 transition">SPRÓBUJ PONOWNIE</button>
-
-</div>
-
-</div>
-
-<script>
-
-// System Audio
-
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-
-let actx;
-
-let clockInterval;
-
-function initAudio() {
-
-if (!actx) actx = new AudioContext();
-
-if (actx.state === 'suspended') actx.resume();
-
-}
-
-function playTone(freq, type, duration, vol = 0.1) {
-
-if (!actx) return;
-
-const osc = actx.createOscillator();
-
-const gain = actx.createGain();
-
-osc.type = type;
-
-osc.frequency.setValueAtTime(freq, actx.currentTime);
-
-gain.gain.setValueAtTime(vol, actx.currentTime);
-
-gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
-
-osc.connect(gain);
-
-gain.connect(actx.destination);
-
-osc.start();
-
-osc.stop(actx.currentTime + duration);
-
-}
-
-function playStartMelody() {
-
-initAudio();
-
-const notes = [261.63, 329.63, 392.00, 523.25]; // Akord C-dur
-
-notes.forEach((freq, i) => {
-
-setTimeout(() => playTone(freq, 'sine', 0.4, 0.2), i * 150);
-
-});
-
-}
-
-function playCorrect() {
-
-playTone(600, 'sine', 0.1, 0.2);
-
-setTimeout(() => playTone(800, 'sine', 0.2, 0.2), 100);
-
-}
-
-function playWrong() {
-
-playTone(300, 'sawtooth', 0.3, 0.2);
-
-setTimeout(() => playTone(200, 'sawtooth', 0.4, 0.2), 200);
-
-}
-
-function playFanfare() {
-
-const notes = [440, 440, 440, 587, 440, 587];
-
-notes.forEach((freq, i) => {
-
-setTimeout(() => playTone(freq, 'square', 0.3, 0.1), i * 200);
-
-});
-
-}
-
-function startClock() {
-
-clockInterval = setInterval(() => playTone(800, 'square', 0.05, 0.01), 1000);
-
-}
-
-function stopClock() { clearInterval(clockInterval); }
-
-// Baza pytań
-
-const allQuestions = [
-
-{ q: "Maksymalny dzienny czas jazdy to:", a: "9h (dwa razy w tygodniu do 10h)", wrong: ["8h (raz w tygodniu 9h)", "11h bez wyjątku"] },
-
-{ q: "Maksymalny tygodniowy czas jazdy wynosi:", a: "56 godzin", wrong: ["90 godzin", "45 godzin"] },
-
-{ q: "Po ilu godzinach ciągłej jazdy należy zrobić przerwę?", a: "Po 4,5 godziny", wrong: ["Po 4 godzinach", "Po 5 godzinach"] },
-
-{ q: "Jak można podzielić 45-minutową przerwę?", a: "15 minut, a potem 30 minut", wrong: ["30 minut, a potem 15 minut", "Dowolnie, np. 3x 15 minut"] },
-
-{ q: "Ile wynosi minimalny regularny odpoczynek dzienny?", a: "11 godzin", wrong: ["9 godzin", "12 godzin"] },
-
-{ q: "Ile wynosi minimalny skrócony odpoczynek tygodniowy?", a: "24 godziny", wrong: ["45 godzin", "11 godzin"] }
-
-];
-
-let questions = [];
-
-let currentQuestion = 0;
-
-let score = 0;
-
-// UI Elements
-
-const screens = {
-
-start: document.getElementById('start-screen'),
-
-quiz: document.getElementById('quiz-screen'),
-
-result: document.getElementById('result-screen')
-
-};
-
-const elements = {
-
-qText: document.getElementById('question-text'),
-
-answers: document.getElementById('answers-container'),
-
-counter: document.getElementById('q-counter'),
-
-resScore: document.getElementById('result-score'),
-
-resText: document.getElementById('result-text')
-
-};
-
-function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
-
-document.getElementById('start-btn').addEventListener('click', () => {
-
-playStartMelody();
-
-setTimeout(startGame, 600);
-
-});
-
-document.getElementById('restart-btn').addEventListener('click', startGame);
-
-function startGame() {
-
-questions = shuffle([...allQuestions]);
-
-currentQuestion = 0;
-
-score = 0;
-
-screens.start.classList.add('hidden');
-
-screens.result.classList.add('hidden');
-
-screens.quiz.classList.remove('hidden');
-
-startClock();
-
-loadQuestion();
-
-}
-
-function loadQuestion() {
-
-elements.counter.innerText = `Pytanie ${currentQuestion + 1}/${questions.length}`;
-
-const q = questions[currentQuestion];
-
-elements.qText.innerText = q.q;
-
-
-
-const options = shuffle([q.a, ...q.wrong]);
-
-elements.answers.innerHTML = '';
-
-
-
-options.forEach(opt => {
-
-const btn = document.createElement('button');
-
-btn.className = "w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-900 transition font-medium";
-
-btn.innerText = opt;
-
-btn.onclick = () => handleAnswer(btn, opt === q.a);
-
-elements.answers.appendChild(btn);
-
-});
-
-}
-
-function handleAnswer(btn, isCorrect) {
-
-Array.from(elements.answers.children).forEach(b => b.disabled = true);
-
-
-
-if (isCorrect) {
-
-btn.classList.replace('border-gray-200', 'border-green-500');
-
-btn.classList.add('bg-green-100');
-
-playCorrect();
-
-score++;
-
-} else {
-
-btn.classList.replace('border-gray-200', 'border-red-500');
-
-btn.classList.add('bg-red-100');
-
-playWrong();
-
-// Pokazanie dobrej odpowiedzi
-
-Array.from(elements.answers.children).forEach(b => {
-
-if(b.innerText === questions[currentQuestion].a) {
-
-b.classList.replace('border-gray-200', 'border-green-500');
-
-}
-
-});
-
-}
-
-setTimeout(() => {
-
-currentQuestion++;
-
-if (currentQuestion < questions.length) loadQuestion();
-
-else showResult();
-
-}, 1500);
-
-}
-
-function showResult() {
-
-stopClock();
-
-screens.quiz.classList.add('hidden');
-
-screens.result.classList.remove('hidden');
-
-elements.resScore.innerText = `Twój wynik: ${score}/6`;
-
-if (score === 6) {
-
-elements.resText.innerText = "Gratulacje ! Jesteś świetnym Planistą , Mex ci nie podskoczy !!";
-
-playFanfare();
-
-confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-
-} else if (score >= 3) {
-
-elements.resText.innerText = "No no Areczku, nie jest źle , ale postaraj się bardziej .";
-
-playTone(300, 'sine', 0.5);
-
-} else {
-
-elements.resText.innerText = "Arek , no co Ty … Jaka lipa . Poducz się i spróbuj jeszcze raz !";
-
-playWrong();
-
-}
-
-}
-
-</script>
-
+    
+    <!-- Ekran odblokowujący dźwięk (Trik na blokadę przeglądarek) -->
+    <div id="unlock-overlay" class="fixed inset-0 bg-blue-900 z-50 flex items-center justify-center text-white cursor-pointer transition-opacity duration-700">
+        <div class="text-center animate-pulse p-6">
+            <div class="text-6xl mb-4">🎵</div>
+            <h2 class="text-3xl font-bold mb-2">Witaj w aplikacji</h2>
+            <p class="text-lg text-blue-200">Kliknij gdziekolwiek na ekranie, aby włączyć dźwięk i wejść</p>
+        </div>
+    </div>
+
+    <!-- Prawdziwe graficzne flagi w tle (zamiast literowych emoji) -->
+    <img src="https://upload.wikimedia.org/wikipedia/en/1/12/Flag_of_Poland.svg" alt="Polska" class="fixed top-12 left-8 w-20 floating rounded shadow-lg" style="animation-delay: 0s;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg" alt="Meksyk" class="fixed bottom-24 right-8 w-20 floating rounded shadow-lg" style="animation-delay: 1s;">
+    
+    <!-- Inne grafiki -->
+    <div class="fixed top-32 right-16 text-5xl floating" style="animation-delay: 2s;">🚛</div>
+    <div class="fixed bottom-32 left-16 text-5xl floating" style="animation-delay: 3s;">📋</div>
+
+    <!-- Główny kontener aplikacji -->
+    <div id="app" class="relative z-10 w-full max-w-md p-6 bg-white rounded-xl shadow-2xl text-gray-800 text-center mx-4">
+        
+        <!-- Ekran Startowy -->
+        <div id="start-screen">
+            <h1 class="text-3xl font-bold text-blue-900 mb-2">Dekalog Areczka</h1>
+            <p class="mb-6 text-gray-600 font-medium">Sprawdź swoją wiedzę z planowania! Gotowy?</p>
+            <button id="start-btn" class="bg-red-600 text-white px-6 py-4 rounded-lg font-bold w-full hover:bg-red-700 transition text-lg shadow-lg">ROZPOCZNIJ QUIZ</button>
+        </div>
+
+        <!-- Ekran Quizu -->
+        <div id="quiz-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-sm font-bold text-gray-500">
+                <span id="q-counter">Pytanie 1/6</span>
+                <span id="clock" class="text-red-500 animate-pulse text-lg flex items-center gap-1">⏱️ <span id="clock-tick" class="w-2 h-2 bg-red-500 rounded-full inline-block"></span></span>
+            </div>
+            <h2 id="question-text" class="text-xl font-bold text-blue-900 mb-6 min-h-[60px]">Pytanie?</h2>
+            <div id="answers-container" class="space-y-3"></div>
+        </div>
+
+        <!-- Ekran Wyników -->
+        <div id="result-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-blue-900 mb-4">Koniec!</h2>
+            <p id="result-score" class="text-2xl mb-2 font-bold text-red-600">Twój wynik: 0/6</p>
+            <p id="result-text" class="mb-6 text-lg font-medium text-gray-700"></p>
+            <button id="restart-btn" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold w-full hover:bg-blue-800 transition">SPRÓBUJ PONOWNIE</button>
+        </div>
+    </div>
+
+    <script>
+        // Zaawansowany System Audio
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let actx;
+        let clockInterval;
+
+        function initAudio() {
+            if (!actx) actx = new AudioContext();
+            if (actx.state === 'suspended') actx.resume();
+        }
+
+        function playTone(freq, type, duration, vol = 0.1, slideFreq = null) {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = type;
+            
+            osc.frequency.setValueAtTime(freq, actx.currentTime);
+            if (slideFreq) {
+                osc.frequency.exponentialRampToValueAtTime(slideFreq, actx.currentTime + duration);
+            }
+
+            gain.gain.setValueAtTime(vol, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + duration);
+        }
+
+        // Ta muzyczka zagra ZANIM klikniesz rozpocznij
+        function playIntroMelody() {
+            initAudio();
+            const notes = [261.6, 329.6, 392.0, 523.2, 659.2, 523.2, 392.0]; // Arpeggio C-dur
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 'sine', 0.3, 0.15), i * 150);
+            });
+        }
+
+        function playCorrect() {
+            playTone(600, 'sine', 0.1, 0.2);
+            setTimeout(() => playTone(800, 'sine', 0.2, 0.2), 100);
+        }
+
+        function playWrong() {
+            playTone(300, 'sawtooth', 0.3, 0.2, 150); // Dźwięk schodzący w dół
+            setTimeout(() => playTone(150, 'sawtooth', 0.4, 0.2, 100), 200);
+        }
+
+        function playFanfare() {
+            const notes = [440, 440, 440, 587, 440, 587];
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 'square', 0.3, 0.1), i * 200);
+            });
+        }
+
+        function startClock() {
+            const tickEl = document.getElementById('clock-tick');
+            let tick = true;
+            clockInterval = setInterval(() => {
+                playTone(1000, 'square', 0.03, 0.02);
+                tickEl.style.opacity = tick ? '1' : '0.2';
+                tick = !tick;
+            }, 1000);
+        }
+        function stopClock() { 
+            clearInterval(clockInterval); 
+            document.getElementById('clock-tick').style.opacity = '1';
+        }
+
+        // Baza pytań
+        const allQuestions = [
+            { q: "Maksymalny dzienny czas jazdy to:", a: "9h (dwa razy w tygodniu do 10h)", wrong: ["8h (raz w tygodniu 9h)", "11h bez wyjątku"] },
+            { q: "Maksymalny tygodniowy czas jazdy wynosi:", a: "56 godzin", wrong: ["90 godzin", "45 godzin"] },
+            { q: "Po ilu godzinach ciągłej jazdy należy zrobić przerwę?", a: "Po 4,5 godziny", wrong: ["Po 4 godzinach", "Po 5 godzinach"] },
+            { q: "Jak można podzielić 45-minutową przerwę?", a: "15 minut, a potem 30 minut", wrong: ["30 minut, a potem 15 minut", "Dowolnie, np. 3x 15 minut"] },
+            { q: "Ile wynosi minimalny regularny odpoczynek dzienny?", a: "11 godzin", wrong: ["9 godzin", "12 godzin"] },
+            { q: "Ile wynosi minimalny skrócony odpoczynek tygodniowy?", a: "24 godziny", wrong: ["45 godzin", "11 godzin"] }
+        ];
+
+        let questions = [];
+        let currentQuestion = 0;
+        let score = 0;
+
+        // UI Elements
+        const screens = {
+            overlay: document.getElementById('unlock-overlay'),
+            start: document.getElementById('start-screen'),
+            quiz: document.getElementById('quiz-screen'),
+            result: document.getElementById('result-screen')
+        };
+        const elements = {
+            qText: document.getElementById('question-text'),
+            answers: document.getElementById('answers-container'),
+            counter: document.getElementById('q-counter'),
+            resScore: document.getElementById('result-score'),
+            resText: document.getElementById('result-text')
+        };
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+        // ODBLOKOWANIE - Kliknięcie w nakładkę
+        screens.overlay.addEventListener('click', function() {
+            screens.overlay.style.opacity = '0';
+            setTimeout(() => screens.overlay.style.display = 'none', 700);
+            playIntroMelody(); // <-- Tutaj gra muzyczka początkowa!
+        });
+
+        // START QUIZU
+        document.getElementById('start-btn').addEventListener('click', () => {
+            playTone(800, 'sine', 0.1, 0.2); // Krótki pik na start
+            startGame();
+        });
+        
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        function startGame() {
+            questions = shuffle([...allQuestions]);
+            currentQuestion = 0;
+            score = 0;
+            screens.start.classList.add('hidden');
+            screens.result.classList.add('hidden');
+            screens.quiz.classList.remove('hidden');
+            startClock();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            elements.counter.innerText = `Pytanie ${currentQuestion + 1}/${questions.length}`;
+            const q = questions[currentQuestion];
+            elements.qText.innerText = q.q;
+            
+            const options = shuffle([q.a, ...q.wrong]);
+            elements.answers.innerHTML = '';
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-900 transition font-medium bg-white";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(btn, opt === q.a);
+                elements.answers.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(btn, isCorrect) {
+            Array.from(elements.answers.children).forEach(b => b.disabled = true);
+            
+            if (isCorrect) {
+                btn.classList.replace('border-gray-200', 'border-green-500');
+                btn.classList.add('bg-green-100');
+                playCorrect();
+                score++;
+            } else {
+                btn.classList.replace('border-gray-200', 'border-red-500');
+                btn.classList.add('bg-red-100');
+                playWrong();
+                
+                // Pokazanie poprawnej odpowiedzi
+                Array.from(elements.answers.children).forEach(b => {
+                    if(b.innerText === questions[currentQuestion].a) {
+                        b.classList.replace('border-gray-200', 'border-green-500');
+                        b.classList.add('bg-green-50');
+                    }
+                });
+            }
+
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) loadQuestion();
+                else showResult();
+            }, 1800);
+        }
+
+        function showResult() {
+            stopClock();
+            screens.quiz.classList.add('hidden');
+            screens.result.classList.remove('hidden');
+            elements.resScore.innerText = `Twój wynik: ${score}/6`;
+
+            if (score === 6) {
+                elements.resText.innerText = "Gratulacje ! Jesteś świetnym Planistą , Mex ci nie podskoczy !!";
+                playFanfare();
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            } else if (score >= 3) {
+                elements.resText.innerText = "No no Areczku, nie jest źle , ale postaraj się bardziej .";
+                playTone(350, 'sine', 0.6, 0.2, 300);
+            } else {
+                elements.resText.innerText = "Arek , no co Ty … Jaka lipa . Poducz się i spróbuj jeszcze raz !";
+                playWrong();
+            }
+        }
+    </script>
 </body>
-
 </html>
